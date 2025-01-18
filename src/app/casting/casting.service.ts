@@ -3,12 +3,83 @@ import { DatabaseService } from '../database/database.service';
 import { CreateCastingDto } from './dto/create-casting.dto';
 import { UpdateCastingDto } from './dto/update-casting.dto';
 import { Casting } from 'src/models/cast.model';
+import { query } from 'express';
 
 @Injectable()
 export class CastingService {
   private readonly logger = new Logger(CastingService.name);
 
   constructor(private readonly dbService: DatabaseService) {}
+
+  async getAllCastings(
+    page: string,
+    limit: string,
+    sortBy: string,
+    sortOrder: string,
+    search: string,
+  ): Promise<any> {
+    const pageNum = parseInt(page, 10) || 1; // Default to page 1
+    const pageSize = parseInt(limit, 10) || 10; // Default to 10 items per page
+    const offset = (pageNum - 1) * pageSize;
+
+    const sortColumn = sortBy || 'created_at'; // Default sorting by created_at
+    const sortDirection = sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    const searchCondition = search
+      ? `AND (
+        c.language_spoken ILIKE $1 OR 
+        c.occupation_status ILIKE $1 OR 
+        c.acting_experience ILIKE $1 OR 
+        c.acting_comfort_zone ILIKE $1 OR 
+        u.name ILIKE $1 OR 
+        u.email ILIKE $1
+      )`
+      : '';
+
+    const values: any[] = search
+      ? [`%${search}%`, pageSize, offset]
+      : [pageSize, offset];
+
+    const query = `
+    SELECT 
+      c.*, 
+      u.name AS user_name, 
+      u.email AS user_email, 
+      u.phone AS user_phone, 
+      u.location AS user_location
+    FROM t_castings c
+    INNER JOIN t_users u ON c.user_id = u.id
+    WHERE c.active = TRUE ${searchCondition}
+    ORDER BY ${sortColumn} ${sortDirection}
+    LIMIT $${values.length - 1}
+    OFFSET $${values.length}
+  `;
+
+    const data = await this.dbService.executeQuery(query, values);
+
+    const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM t_castings c
+    INNER JOIN t_users u ON c.user_id = u.id
+    WHERE c.active = TRUE
+    ${searchCondition}
+  `;
+    const totalCountResult = await this.dbService.executeQuery(
+      countQuery,
+      search ? [`%${search}%`] : [],
+    );
+    const totalCount = totalCountResult[0]?.total || 0;
+
+    return {
+      data,
+      pagination: {
+        page: pageNum,
+        limit: pageSize,
+        total: parseInt(totalCount, 10),
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    };
+  }
 
   async addCasting(castingDto: CreateCastingDto) {
     const {

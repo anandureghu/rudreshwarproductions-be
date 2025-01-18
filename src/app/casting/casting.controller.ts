@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UploadedFiles,
   UseInterceptors,
@@ -28,6 +29,23 @@ export class CastingController {
     private castingService: CastingService,
     private readonly gcsService: GcsService,
   ) {}
+
+  @Get()
+  async getAllCastings(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: string,
+    @Query('search') search: string,
+  ): Promise<any> {
+    return this.castingService.getAllCastings(
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      search,
+    );
+  }
 
   @Post()
   async addCasting(
