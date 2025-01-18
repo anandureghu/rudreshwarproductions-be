@@ -131,7 +131,7 @@ export class ContactService {
 
     query += `
     ORDER BY c.created_at DESC
-    LIMIT ${limit} OFFSET ${page};
+    LIMIT ${limit || 10} OFFSET ${offset || 0};
   `;
 
     const contacts = await this.dbService.pool.query(query);
@@ -139,7 +139,7 @@ export class ContactService {
     const total = await this.dbService.pool.query(countQuery); // Remove limit and offset for count query
     return {
       data: contacts.rows,
-      total: total.rows[0].count - 1,
+      total: +total.rows[0].count,
       currentPage: page,
       totalPages: Math.ceil(total.rows[0].count / limit),
     };
