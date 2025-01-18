@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { GcsModule } from './gcs/gcs.module';
 import { ContactModule } from './contact/contact.module';
 import { PaymentModule } from './payment/payment.module';
+import { UserModule } from './user/user.module';
 import configuration from 'src/config/configuration';
 import databaseConfig from 'src/config/database.config';
 import gcpConfig from 'src/config/gcp.config';
@@ -21,6 +22,7 @@ import paymentConfig from 'src/config/payment.config';
     GcsModule,
     ContactModule,
     PaymentModule,
+    UserModule,
   ],
 })
 export class AppModule {}

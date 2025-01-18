@@ -11,6 +11,15 @@ export class CastingService {
 
   constructor(private readonly dbService: DatabaseService) {}
 
+  async validateAgent(email: string): Promise<boolean> {
+    const result: any[] = await this.dbService.executeQuery(
+      `SELECT 1 FROM t_users WHERE email = $1 AND agent = TRUE AND active = TRUE`,
+      [email],
+    );
+
+    return result.length > 0;
+  }
+
   async getAllCastings(
     page: string,
     limit: string,
@@ -98,6 +107,7 @@ export class CastingService {
       actingExperience,
       actingComfortZone,
       specialSkills,
+      agentEmail,
     } = castingDto;
 
     const client = await this.dbService.pool.connect(); // Get a client from the pool
@@ -135,9 +145,10 @@ export class CastingService {
         occupation_status,
         acting_experience,
         acting_comfort_zone,
-        special_skills
+        special_skills,
+        agent_email
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
     `;
       const castingValues = [
         userId,
@@ -150,6 +161,7 @@ export class CastingService {
         actingExperience,
         actingComfortZone,
         specialSkills,
+        agentEmail || null,
       ];
 
       await client.query(insertCastingQuery, castingValues);
@@ -175,6 +187,7 @@ export class CastingService {
       actingExperience,
       actingComfortZone,
       specialSkills,
+      agentEmail,
     } = castingDto;
 
     const client = await this.dbService.pool.connect(); // Get a client from the pool
@@ -185,19 +198,22 @@ export class CastingService {
       const updateCastingQuery = `
       UPDATE t_castings
       SET
-        height = $1,
-        weight = $2,
-        hair_color = $3,
-        eye_color = $4,
-        language_spoken = $5,
-        occupation_status = $6,
-        acting_experience = $7,
-        acting_comfort_zone = $8,
-        special_skills = $9
-      WHERE user_id = $10;
+        height = COALESCE($2, height),
+        weight = COALESCE($3, weight),
+        hair_color = COALESCE($4, hair_color),
+        eye_color = COALESCE($5, eye_color),
+        language_spoken = COALESCE($6, language_spoken),
+        occupation_status = COALESCE($7, occupation_status),
+        acting_experience = COALESCE($8, acting_experience),
+        acting_comfort_zone = COALESCE($9, acting_comfort_zone),
+        special_skills = COALESCE($10, special_skills),
+        agent_email = COALESCE($11, agent_email),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = $11;
     `;
 
       const castingValues = [
+        userId,
         height,
         weight,
         hairColor,
@@ -207,7 +223,7 @@ export class CastingService {
         actingExperience,
         actingComfortZone,
         specialSkills,
-        userId,
+        agentEmail || null,
       ];
 
       const result = await client.query(updateCastingQuery, castingValues); // Execute update

@@ -71,4 +71,8 @@ export class CreateCastingDto {
   @IsOptional()
   @IsString()
   specialSkills: string;
+
+  @IsOptional()
+  @IsString()
+  agentEmail: string;
 }

@@ -37,14 +37,29 @@ export class CastingController {
     @Query('sortBy') sortBy: string,
     @Query('sortOrder') sortOrder: string,
     @Query('search') search: string,
+    @Res() res: Response,
   ): Promise<any> {
-    return this.castingService.getAllCastings(
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-      search,
-    );
+    try {
+      const data = await this.castingService.getAllCastings(
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        search,
+      );
+      return res
+        .status(HttpStatus.OK)
+        .json({ ...data, message: 'Fetched all castings successfully' });
+    } catch (error) {
+      // Log the error for internal tracking
+      this.logger.error('Failed to fetch casting data', error);
+
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: 'error',
+        message: 'Failed to fetch casting data due to a server error.',
+        error: error,
+      });
+    }
   }
 
   @Post()
@@ -53,6 +68,17 @@ export class CastingController {
     @Body() castingData: CreateCastingDto,
   ) {
     try {
+      const { agentEmail } = castingData;
+      if (agentEmail) {
+        const isAgentValid =
+          await this.castingService.validateAgent(agentEmail);
+        if (!isAgentValid) {
+          return {
+            success: false,
+            message: 'Invalid agent email or agent is not active.',
+          };
+        }
+      }
       await this.castingService.addCasting(castingData);
       return res
         .status(HttpStatus.CREATED)
@@ -82,6 +108,17 @@ export class CastingController {
     @Res() res: Response, // Inject the response object to send custom status codes
   ) {
     try {
+      const { agentEmail } = castingData;
+      if (agentEmail) {
+        const isAgentValid =
+          await this.castingService.validateAgent(agentEmail);
+        if (!isAgentValid) {
+          return {
+            success: false,
+            message: 'Invalid agent email or agent is not active.',
+          };
+        }
+      }
       const updatedCastingData = await this.castingService.updateCasting(
         userId,
         castingData,

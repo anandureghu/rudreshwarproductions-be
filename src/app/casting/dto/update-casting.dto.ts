@@ -36,4 +36,8 @@ export class UpdateCastingDto {
   @IsOptional()
   @IsString()
   specialSkills?: string;
+
+  @IsOptional()
+  @IsString()
+  agentEmail: string;
 }
